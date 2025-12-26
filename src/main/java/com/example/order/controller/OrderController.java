@@ -1,0 +1,136 @@
+package com.example.order.controller;
+
+import com.example.order.dto.CreateOrderRequest;
+import com.example.order.dto.OrderResponse;
+import com.example.order.entity.Address;
+import com.example.order.entity.OrderEntity;
+import com.example.order.entity.OrderItem;
+import com.example.order.service.OrderService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/order")
+public class OrderController {
+    private final OrderService orderService;
+
+    public OrderController(OrderService orderService) {
+        this.orderService = orderService;
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createOrder(@Valid @RequestBody CreateOrderRequest req) {
+        OrderEntity saved = orderService.createOrder(req);
+        return ResponseEntity.ok(saved.getId());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getOrder(@PathVariable String id) {
+        return orderService.findById(id)
+                .map(this::toResponse)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> updateStatus(@PathVariable String id, @RequestBody StatusUpdate req) {
+        return orderService.updateStatus(id, req.getOrder_status())
+                .map(o -> ResponseEntity.ok().build())
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    private OrderResponse toResponse(OrderEntity e) {
+        OrderResponse r = new OrderResponse();
+        r.setId(e.getId());
+        r.setOrderDate(e.getOrderDate());
+        r.setOrderTotal(e.getOrderTotal());
+        r.setItemTotal(e.getItemTotal());
+        r.setShippingTotal(e.getShippingTotal());
+        r.setPaymentMethod(e.getPaymentMethod());
+        r.setOrderStatus(e.getOrderStatus());
+        r.setOrderItems(e.getOrderItems().stream().map(this::mapItem).collect(Collectors.toList()));
+        r.setAddresses(e.getAddresses().stream().map(this::mapAddress).collect(Collectors.toList()));
+        return r;
+    }
+
+    private OrderResponse.OrderItemResponse mapItem(OrderItem i) {
+        OrderResponse.OrderItemResponse r = new OrderResponse.OrderItemResponse();
+        r.setId(i.getId());
+        r.setSku(i.getSku());
+        r.setUnitPrice(i.getUnitPrice());
+        r.setQuantity(i.getQuantity());
+        r.setProductName(i.getProductName());
+        r.setAmount(i.getAmount());
+        return r;
+    }
+
+    private OrderResponse.AddressResponse mapAddress(Address a) {
+        OrderResponse.AddressResponse r = new OrderResponse.AddressResponse();
+        r.setId(a.getId());
+        r.setAddressType(a.getAddressType() != null ? a.getAddressType().name() : null);
+        r.setFirstName(a.getFirstName());
+        r.setLastName(a.getLastName());
+        r.setCountry(a.getCountry());
+        r.setCity(a.getCity());
+        r.setZipCode(a.getZipCode());
+        r.setAddress1(a.getAddress1());
+        return r;
+    }
+
+    public static class StatusUpdate {
+        private String order_status;
+
+        public String getOrder_status() {
+            return order_status;
+        }
+
+        public void setOrder_status(String order_status) {
+            this.order_status = order_status;
+        }
+    }
+}
+package com.example.order.controller;
+
+import com.example.order.dto.OrderRequest;
+import com.example.order.dto.OrderResponse;
+import com.example.order.mapper.OrderMapper;
+import com.example.order.model.Order;
+import com.example.order.service.OrderService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
+
+@RestController
+@RequestMapping("/order")
+public class OrderController {
+    private final OrderService orderService;
+
+    public OrderController(OrderService orderService) {
+        this.orderService = orderService;
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderResponse> getOrder(@PathVariable("id") Long id) {
+        return orderService.getOrder(id)
+                .map(OrderMapper::toResponse)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest orderRequest) {
+        Order entity = OrderMapper.toEntity(orderRequest);
+        Order created = orderService.createOrder(entity);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(created.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(OrderMapper.toResponse(created));
+    }
+}
