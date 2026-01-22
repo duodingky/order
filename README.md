@@ -28,6 +28,8 @@ Request body:
 }
 ```
 
+You can also pass `orderItems` as a query parameter containing a JSON string.
+
 Response:
 
 ```json

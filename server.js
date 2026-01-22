@@ -83,7 +83,18 @@ async function fetchProduct(productId) {
 }
 
 app.post("/createOrder", async (req, res) => {
-  const { orderItems } = req.body ?? {};
+  let orderItems = req.body?.orderItems ?? req.query?.orderItems;
+
+  if (typeof orderItems === "string") {
+    try {
+      orderItems = JSON.parse(orderItems);
+    } catch (error) {
+      return res.status(400).json({
+        error: "orderItems must be valid JSON when provided as a string",
+      });
+    }
+  }
+
   const validation = validateOrderItems(orderItems);
 
   if (!validation.ok) {
