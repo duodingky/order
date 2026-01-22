@@ -20,6 +20,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,10 +34,15 @@ public class OrderService {
     public OrderService(
             OrderRepository orderRepository,
             RestTemplateBuilder restTemplateBuilder,
-            @Value("${product.service.base-url:http://localhost:81}") String productServiceBaseUrl
+            @Value("${product.service.base-url:http://localhost:81}") String productServiceBaseUrl,
+            @Value("${product.service.connect-timeout-ms:2000}") int connectTimeoutMs,
+            @Value("${product.service.read-timeout-ms:5000}") int readTimeoutMs
     ) {
         this.orderRepository = orderRepository;
-        this.restTemplate = restTemplateBuilder.build();
+        this.restTemplate = restTemplateBuilder
+                .setConnectTimeout(Duration.ofMillis(connectTimeoutMs))
+                .setReadTimeout(Duration.ofMillis(readTimeoutMs))
+                .build();
         this.productServiceBaseUrl = normalizeBaseUrl(productServiceBaseUrl);
     }
 
@@ -146,6 +152,7 @@ public class OrderService {
     private ProductResponse fetchProduct(String productId) {
         String url = productServiceBaseUrl + "/products/" + productId;
         try {
+            log.info("Fetching product {} from {}", productId, url);
             ProductResponse product = restTemplate.getForObject(url, ProductResponse.class);
             if (product == null) {
                 log.warn("Product service returned null response for id {} at {}", productId, url);
