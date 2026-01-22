@@ -2,6 +2,7 @@ package com.example.order.service;
 
 import com.example.order.dto.CreateOrderFromProductRequest;
 import com.example.order.dto.CreateOrderRequest;
+import com.example.order.dto.DeleteOrderItemsRequest;
 import com.example.order.dto.ProductResponse;
 import com.example.order.entity.Address;
 import com.example.order.entity.AddressType;
@@ -25,8 +26,10 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class OrderService {
@@ -167,6 +170,37 @@ public class OrderService {
         }
 
         updateTotals(order);
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public OrderEntity removeItemsFromOrder(String orderId, DeleteOrderItemsRequest req) {
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + orderId));
+
+        if (req == null || req.getOrderItems() == null || req.getOrderItems().getIds() == null) {
+            return order;
+        }
+
+        Set<Long> ids = new HashSet<>(req.getOrderItems().getIds());
+        if (ids.isEmpty()) {
+            return order;
+        }
+
+        boolean removed = false;
+        for (var iterator = order.getOrderItems().iterator(); iterator.hasNext(); ) {
+            OrderItem item = iterator.next();
+            if (item.getId() != null && ids.contains(item.getId())) {
+                item.setOrder(null);
+                iterator.remove();
+                removed = true;
+            }
+        }
+
+        if (removed) {
+            updateTotals(order);
+        }
+
         return orderRepository.save(order);
     }
 

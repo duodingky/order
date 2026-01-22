@@ -1,10 +1,12 @@
 package com.example.order.controller;
 
 import com.example.order.dto.CreateOrderFromProductRequest;
+import com.example.order.dto.DeleteOrderItemsRequest;
 import com.example.order.entity.OrderEntity;
 import com.example.order.service.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,6 +30,13 @@ public class OrderCreationController {
     public ResponseEntity<?> addItem(@PathVariable String orderId,
                                      @Valid @RequestBody CreateOrderFromProductRequest req) {
         OrderEntity saved = orderService.addItemsToOrder(orderId, req);
+        return ResponseEntity.ok(saved.getId());
+    }
+
+    @DeleteMapping("/orderItem/{orderId}")
+    public ResponseEntity<?> deleteItems(@PathVariable String orderId,
+                                         @Valid @RequestBody DeleteOrderItemsRequest req) {
+        OrderEntity saved = orderService.removeItemsFromOrder(orderId, req);
         return ResponseEntity.ok(saved.getId());
     }
 }
