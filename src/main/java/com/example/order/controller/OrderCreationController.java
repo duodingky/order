@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,6 +21,13 @@ public class OrderCreationController {
     @PostMapping("/createOrder")
     public ResponseEntity<?> createOrder(@Valid @RequestBody CreateOrderFromProductRequest req) {
         OrderEntity saved = orderService.createOrderFromProductRequest(req);
+        return ResponseEntity.ok(saved.getId());
+    }
+
+    @PostMapping("/addItem/{orderId}")
+    public ResponseEntity<?> addItem(@PathVariable String orderId,
+                                     @Valid @RequestBody CreateOrderFromProductRequest req) {
+        OrderEntity saved = orderService.addItemsToOrder(orderId, req);
         return ResponseEntity.ok(saved.getId());
     }
 }

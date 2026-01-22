@@ -114,6 +114,7 @@ public class OrderService {
                 ProductResponse product = fetchProduct(it.getId());
 
                 OrderItem item = new OrderItem();
+                item.setProductId(it.getId());
                 item.setSku(product.getSku());
                 item.setProductName(product.getProductName());
                 item.setCategoryId(product.getCategoryId());
@@ -139,6 +140,33 @@ public class OrderService {
             order.setShippingTotal(0.0);
         }
 
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public OrderEntity addItemsToOrder(String orderId, CreateOrderFromProductRequest req) {
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + orderId));
+
+        if (req.getOrderItems() != null) {
+            for (CreateOrderFromProductRequest.OrderItemRequest it : req.getOrderItems()) {
+                ProductResponse product = fetchProduct(it.getId());
+                OrderItem existing = findItemByProductId(order, it.getId());
+                if (existing != null) {
+                    Integer currentQty = existing.getQuantity() != null ? existing.getQuantity() : 0;
+                    Integer addQty = it.getQty() != null ? it.getQty() : 0;
+                    existing.setQuantity(currentQty + addQty);
+                    applyProductDetails(existing, product, it.getId());
+                } else {
+                    OrderItem item = new OrderItem();
+                    item.setQuantity(it.getQty());
+                    applyProductDetails(item, product, it.getId());
+                    order.addItem(item);
+                }
+            }
+        }
+
+        updateTotals(order);
         return orderRepository.save(order);
     }
 
@@ -190,6 +218,49 @@ public class OrderService {
                     "Product service error for id " + productId,
                     ex
             );
+        }
+    }
+
+    private OrderItem findItemByProductId(OrderEntity order, String productId) {
+        if (productId == null) {
+            return null;
+        }
+        for (OrderItem item : order.getOrderItems()) {
+            if (productId.equals(item.getProductId())) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private void applyProductDetails(OrderItem item, ProductResponse product, String productId) {
+        item.setProductId(productId);
+        item.setSku(product.getSku());
+        item.setProductName(product.getProductName());
+        item.setCategoryId(product.getCategoryId());
+        item.setCategoryName(product.getCategoryName());
+        item.setBrandId(product.getBrandId());
+        item.setBrandName(product.getBrandName());
+        item.setPrice(product.getPrice());
+        item.setUnitPrice(product.getPrice());
+        item.setShortDesc(product.getShortDesc());
+    }
+
+    private void updateTotals(OrderEntity order) {
+        double itemTotal = 0;
+        boolean hasPrice = false;
+        for (OrderItem item : order.getOrderItems()) {
+            Double price = item.getPrice() != null ? item.getPrice() : item.getUnitPrice();
+            Integer qty = item.getQuantity();
+            if (price != null && qty != null) {
+                itemTotal += price * qty;
+                hasPrice = true;
+            }
+        }
+        if (hasPrice) {
+            order.setItemTotal(itemTotal);
+            Double shipping = order.getShippingTotal();
+            order.setOrderTotal(shipping != null ? itemTotal + shipping : itemTotal);
         }
     }
 

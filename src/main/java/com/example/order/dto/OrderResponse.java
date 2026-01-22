@@ -20,6 +20,7 @@ public class OrderResponse {
     @Data
     public static class OrderItemResponse {
         private Long id;
+        private String productId;
         private String sku;
         private String categoryId;
         private String categoryName;

@@ -59,6 +59,7 @@ public class OrderController {
     private OrderResponse.OrderItemResponse mapItem(OrderItem i) {
         OrderResponse.OrderItemResponse r = new OrderResponse.OrderItemResponse();
         r.setId(i.getId());
+        r.setProductId(i.getProductId());
         r.setSku(i.getSku());
         r.setCategoryId(i.getCategoryId());
         r.setCategoryName(i.getCategoryName());

@@ -18,6 +18,9 @@ public class OrderItem {
     @JoinColumn(name = "order_id")
     private OrderEntity order;
 
+    @Column(name = "product_id")
+    private String productId;
+
     private String sku;
 
     @Column(name = "category_id")
