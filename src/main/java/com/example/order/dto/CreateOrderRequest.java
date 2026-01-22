@@ -37,7 +37,13 @@ public class CreateOrderRequest {
     public static class OrderItemData {
         private String sku;
         private Double unitPrice;
+        private Double price;
         private String productName;
+        private String categoryId;
+        private String categoryName;
+        private String brandId;
+        private String brandName;
+        private String shortDesc;
         private Integer qty;
     }
 }
