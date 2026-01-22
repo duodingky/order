@@ -18,7 +18,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -91,7 +90,6 @@ public class OrderService {
     @Transactional
     public OrderEntity createOrderFromProductRequest(CreateOrderFromProductRequest req) {
         OrderEntity order = new OrderEntity();
-        List<OrderItem> items = new ArrayList<>();
         double itemTotal = 0;
         boolean hasPrice = false;
 
@@ -110,17 +108,13 @@ public class OrderService {
                 item.setUnitPrice(product.getPrice());
                 item.setShortDesc(product.getShortDesc());
                 item.setQuantity(it.getQty());
-                items.add(item);
+                order.addItem(item);
 
                 if (product.getPrice() != null && it.getQty() != null) {
                     itemTotal += product.getPrice() * it.getQty();
                     hasPrice = true;
                 }
             }
-        }
-
-        for (OrderItem item : items) {
-            order.addItem(item);
         }
 
         if (hasPrice) {
