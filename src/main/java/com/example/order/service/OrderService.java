@@ -13,7 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
@@ -30,13 +34,15 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final RestTemplate restTemplate;
     private final String productServiceBaseUrl;
+    private final String productServiceToken;
 
     public OrderService(
             OrderRepository orderRepository,
             RestTemplateBuilder restTemplateBuilder,
             @Value("${product.service.base-url:http://localhost:81}") String productServiceBaseUrl,
             @Value("${product.service.connect-timeout-ms:2000}") int connectTimeoutMs,
-            @Value("${product.service.read-timeout-ms:5000}") int readTimeoutMs
+            @Value("${product.service.read-timeout-ms:5000}") int readTimeoutMs,
+            @Value("${product.service.token:}") String productServiceToken
     ) {
         this.orderRepository = orderRepository;
         this.restTemplate = restTemplateBuilder
@@ -44,6 +50,7 @@ public class OrderService {
                 .setReadTimeout(Duration.ofMillis(readTimeoutMs))
                 .build();
         this.productServiceBaseUrl = normalizeBaseUrl(productServiceBaseUrl);
+        this.productServiceToken = productServiceToken;
     }
 
     @Transactional
@@ -153,7 +160,18 @@ public class OrderService {
         String url = productServiceBaseUrl + "/products/" + productId;
         try {
             log.info("Fetching product {} from {}", productId, url);
-            ProductResponse product = restTemplate.getForObject(url, ProductResponse.class);
+            HttpHeaders headers = new HttpHeaders();
+            if (productServiceToken != null && !productServiceToken.isBlank()) {
+                headers.setBearerAuth(productServiceToken);
+            }
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            ResponseEntity<ProductResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    ProductResponse.class
+            );
+            ProductResponse product = response.getBody();
             if (product == null) {
                 log.warn("Product service returned null response for id {} at {}", productId, url);
                 throw new ResponseStatusException(
