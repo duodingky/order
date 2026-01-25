@@ -18,3 +18,9 @@ Endpoints:
 - `GET /order/{id}` - fetch order by id.
 - `PATCH /order/{id}` - update order status with JSON `{ "order_status": "..." }`.
 # order
+
+
+#run docker
+- mvn clean package
+- docker build -t my-springboot-app .
+- docker run -p 8080:8080 --name my-springboot-container my-springboot-app OR  docker run  -d -p 8080:8080 --name my-springboot-container my-springboot-app

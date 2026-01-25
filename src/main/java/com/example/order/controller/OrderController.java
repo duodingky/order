@@ -38,14 +38,14 @@ public class OrderController {
         return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
     }
 
-    @PostMapping("/createOrder/addItem/{orderId}")
+    @PostMapping("/addItem/{orderId}")
     public ResponseEntity<?> addItem(@PathVariable String orderId,
                                      @Valid @RequestBody CreateOrderFromProductRequest req) {
         OrderEntity saved = orderService.addItemsToOrder(orderId, req);
         return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
     }
 
-    @DeleteMapping("/createOrder/orderItem/{orderId}")
+    @DeleteMapping("/orderItem/{orderId}")
     public ResponseEntity<?> deleteItems(@PathVariable String orderId,
                                          @Valid @RequestBody DeleteOrderItemsRequest req) {
         OrderEntity saved = orderService.removeItemsFromOrder(orderId, req);
