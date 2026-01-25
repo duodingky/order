@@ -24,3 +24,6 @@ Endpoints:
 - mvn clean package
 - docker build -t my-springboot-app .
 - docker run -p 8080:8080 --name my-springboot-container my-springboot-app OR  docker run  -d -p 8080:8080 --name my-springboot-container my-springboot-app
+
+#run in Dev mode 
+ mvn spring-boot:run
