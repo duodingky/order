@@ -1,7 +1,9 @@
 package com.example.order.controller;
 
 import com.example.order.dto.ApiResponse;
+import com.example.order.dto.CreateOrderFromProductRequest;
 import com.example.order.dto.CreateOrderRequest;
+import com.example.order.dto.DeleteOrderItemsRequest;
 import com.example.order.dto.OrderResponse;
 import com.example.order.entity.Address;
 import com.example.order.entity.OrderEntity;
@@ -27,6 +29,26 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<?> createOrder(@Valid @RequestBody CreateOrderRequest req) {
         OrderEntity saved = orderService.createOrder(req);
+        return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
+    }
+
+    @PostMapping("/createOrder")
+    public ResponseEntity<?> createOrderFromProduct(@Valid @RequestBody CreateOrderFromProductRequest req) {
+        OrderEntity saved = orderService.createOrderFromProductRequest(req);
+        return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
+    }
+
+    @PostMapping("/createOrder/addItem/{orderId}")
+    public ResponseEntity<?> addItem(@PathVariable String orderId,
+                                     @Valid @RequestBody CreateOrderFromProductRequest req) {
+        OrderEntity saved = orderService.addItemsToOrder(orderId, req);
+        return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
+    }
+
+    @DeleteMapping("/createOrder/orderItem/{orderId}")
+    public ResponseEntity<?> deleteItems(@PathVariable String orderId,
+                                         @Valid @RequestBody DeleteOrderItemsRequest req) {
+        OrderEntity saved = orderService.removeItemsFromOrder(orderId, req);
         return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
     }
 
