@@ -20,10 +20,17 @@ public class OrderResponse {
     @Data
     public static class OrderItemResponse {
         private Long id;
+        private String productId;
         private String sku;
+        private String categoryId;
+        private String categoryName;
+        private String brandId;
+        private String brandName;
         private Double unitPrice;
+        private Double price;
         private Integer quantity;
         private String productName;
+        private String shortDesc;
         private Double amount;
     }
 

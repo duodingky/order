@@ -59,10 +59,17 @@ public class OrderController {
     private OrderResponse.OrderItemResponse mapItem(OrderItem i) {
         OrderResponse.OrderItemResponse r = new OrderResponse.OrderItemResponse();
         r.setId(i.getId());
+        r.setProductId(i.getProductId());
         r.setSku(i.getSku());
+        r.setCategoryId(i.getCategoryId());
+        r.setCategoryName(i.getCategoryName());
+        r.setBrandId(i.getBrandId());
+        r.setBrandName(i.getBrandName());
         r.setUnitPrice(i.getUnitPrice());
+        r.setPrice(i.getPrice() != null ? i.getPrice() : i.getUnitPrice());
         r.setQuantity(i.getQuantity());
         r.setProductName(i.getProductName());
+        r.setShortDesc(i.getShortDesc());
         r.setAmount(i.getAmount());
         return r;
     }
