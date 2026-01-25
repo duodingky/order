@@ -34,7 +34,7 @@ public class OrderController {
     public ResponseEntity<?> getOrder(@PathVariable String id) {
         return orderService.findById(id)
                 .map(this::toResponse)
-                .map(response -> ResponseEntity.ok(new ApiResponse<>(response)))
+                .<ResponseEntity<?>>map(response -> ResponseEntity.ok(new ApiResponse<>(response)))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(new ApiResponse<>(Map.of())));
     }
