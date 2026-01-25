@@ -1,5 +1,6 @@
 package com.example.order.controller;
 
+import com.example.order.dto.ApiResponse;
 import com.example.order.dto.CreateOrderRequest;
 import com.example.order.dto.OrderResponse;
 import com.example.order.entity.Address;
@@ -7,9 +8,11 @@ import com.example.order.entity.OrderEntity;
 import com.example.order.entity.OrderItem;
 import com.example.order.service.OrderService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -24,22 +27,24 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<?> createOrder(@Valid @RequestBody CreateOrderRequest req) {
         OrderEntity saved = orderService.createOrder(req);
-        return ResponseEntity.ok(saved.getId());
+        return ResponseEntity.ok(new ApiResponse<>(Map.of("id", saved.getId())));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getOrder(@PathVariable String id) {
         return orderService.findById(id)
                 .map(this::toResponse)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .map(response -> ResponseEntity.ok(new ApiResponse<>(response)))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ApiResponse<>(Map.of())));
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<?> updateStatus(@PathVariable String id, @RequestBody StatusUpdate req) {
         return orderService.updateStatus(id, req.getOrder_status())
-                .map(o -> ResponseEntity.ok().build())
-                .orElse(ResponseEntity.notFound().build());
+                .map(o -> ResponseEntity.ok(new ApiResponse<>(Map.of())))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ApiResponse<>(Map.of())));
     }
 
     private OrderResponse toResponse(OrderEntity e) {
