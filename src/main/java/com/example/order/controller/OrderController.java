@@ -12,8 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/order")
@@ -27,7 +27,7 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<?> createOrder(@Valid @RequestBody CreateOrderRequest req) {
         OrderEntity saved = orderService.createOrder(req);
-        return ResponseEntity.ok(new ApiResponse<>(Map.of("id", saved.getId())));
+        return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
     }
 
     @GetMapping("/{id}")
