@@ -178,17 +178,14 @@ public class OrderService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + orderId));
 
         Map<AddressType, AddAddressRequest> byType = validateAddressPayload(addresses);
+        Map<AddressType, Address> existingByType = normalizeExistingAddresses(order);
         for (var entry : byType.entrySet()) {
             AddressType type = entry.getKey();
             AddAddressRequest request = entry.getValue();
-            boolean updated = false;
-            for (Address existing : order.getAddresses()) {
-                if (type.equals(existing.getAddressType())) {
-                    applyAddressFields(existing, request, type);
-                    updated = true;
-                }
-            }
-            if (!updated) {
+            Address existing = existingByType.get(type);
+            if (existing != null) {
+                applyAddressFields(existing, request, type);
+            } else {
                 order.addAddress(toAddress(request, type));
             }
         }
@@ -378,6 +375,24 @@ public class OrderService {
             );
         }
         return byType;
+    }
+
+    private Map<AddressType, Address> normalizeExistingAddresses(OrderEntity order) {
+        EnumMap<AddressType, Address> existingByType = new EnumMap<>(AddressType.class);
+        if (order.getAddresses() == null) {
+            return existingByType;
+        }
+        for (var iterator = order.getAddresses().iterator(); iterator.hasNext(); ) {
+            Address existing = iterator.next();
+            AddressType type = existing.getAddressType();
+            if (type == null || existingByType.containsKey(type)) {
+                existing.setOrder(null);
+                iterator.remove();
+                continue;
+            }
+            existingByType.put(type, existing);
+        }
+        return existingByType;
     }
 
     private Address toAddress(AddAddressRequest request, AddressType type) {
