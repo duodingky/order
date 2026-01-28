@@ -31,6 +31,8 @@ public class Address {
     private String country;
     private String city;
 
+    private String province;
+
     @Column(name = "zip_code")
     private String zipCode;
 

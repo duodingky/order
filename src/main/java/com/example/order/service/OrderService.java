@@ -1,5 +1,6 @@
 package com.example.order.service;
 
+import com.example.order.dto.AddAddressRequest;
 import com.example.order.dto.CreateOrderFromProductRequest;
 import com.example.order.dto.CreateOrderRequest;
 import com.example.order.dto.DeleteOrderItemsRequest;
@@ -26,8 +27,10 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -92,13 +95,9 @@ public class OrderService {
                 addr.setAddress1(a.getAddress1());
                 addr.setCity(a.getCity());
                 addr.setCountry(a.getCountry());
+                addr.setProvince(a.getProvince());
                 addr.setZipCode(a.getZipCode());
-                try {
-                    addr.setAddressType(AddressType.valueOf(a.getAddressType()));
-                } catch (Exception ex) {
-                    // try lowercase
-                    addr.setAddressType(AddressType.valueOf(a.getAddressType().toLowerCase()));
-                }
+                addr.setAddressType(resolveAddressType(a.getAddressType()));
                 order.addAddress(addr);
             }
         }
@@ -170,6 +169,27 @@ public class OrderService {
         }
 
         updateTotals(order);
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public OrderEntity addAddressesToOrder(String orderId, List<AddAddressRequest> addresses) {
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + orderId));
+
+        Map<AddressType, AddAddressRequest> byType = validateAddressPayload(addresses);
+        Map<AddressType, Address> existingByType = normalizeExistingAddresses(order);
+        for (var entry : byType.entrySet()) {
+            AddressType type = entry.getKey();
+            AddAddressRequest request = entry.getValue();
+            Address existing = existingByType.get(type);
+            if (existing != null) {
+                applyAddressFields(existing, request, type);
+            } else {
+                order.addAddress(toAddress(request, type));
+            }
+        }
+
         return orderRepository.save(order);
     }
 
@@ -296,6 +316,100 @@ public class OrderService {
             Double shipping = order.getShippingTotal();
             order.setOrderTotal(shipping != null ? itemTotal + shipping : itemTotal);
         }
+    }
+
+    private AddressType resolveAddressType(String addressType) {
+        if (addressType == null || addressType.isBlank()) {
+            return null;
+        }
+        try {
+            return AddressType.valueOf(addressType);
+        } catch (IllegalArgumentException ex) {
+            return AddressType.valueOf(addressType.toLowerCase());
+        }
+    }
+
+    private AddressType resolveAddressTypeRequired(String addressType) {
+        if (addressType == null || addressType.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "address_type is required");
+        }
+        try {
+            return AddressType.valueOf(addressType);
+        } catch (IllegalArgumentException ex) {
+            try {
+                return AddressType.valueOf(addressType.toLowerCase());
+            } catch (IllegalArgumentException inner) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Invalid address_type: " + addressType
+                );
+            }
+        }
+    }
+
+    private Map<AddressType, AddAddressRequest> validateAddressPayload(List<AddAddressRequest> addresses) {
+        if (addresses == null || addresses.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Address payload must include billing and shipping addresses"
+            );
+        }
+        EnumMap<AddressType, AddAddressRequest> byType = new EnumMap<>(AddressType.class);
+        for (AddAddressRequest request : addresses) {
+            if (request == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Address payload contains null entry");
+            }
+            AddressType type = resolveAddressTypeRequired(request.getAddressType());
+            if (byType.containsKey(type)) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Duplicate address type: " + type.name()
+                );
+            }
+            byType.put(type, request);
+        }
+        if (!byType.containsKey(AddressType.billing) || !byType.containsKey(AddressType.shipping)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Address payload must include billing and shipping addresses"
+            );
+        }
+        return byType;
+    }
+
+    private Map<AddressType, Address> normalizeExistingAddresses(OrderEntity order) {
+        EnumMap<AddressType, Address> existingByType = new EnumMap<>(AddressType.class);
+        if (order.getAddresses() == null) {
+            return existingByType;
+        }
+        for (var iterator = order.getAddresses().iterator(); iterator.hasNext(); ) {
+            Address existing = iterator.next();
+            AddressType type = existing.getAddressType();
+            if (type == null || existingByType.containsKey(type)) {
+                existing.setOrder(null);
+                iterator.remove();
+                continue;
+            }
+            existingByType.put(type, existing);
+        }
+        return existingByType;
+    }
+
+    private Address toAddress(AddAddressRequest request, AddressType type) {
+        Address addr = new Address();
+        applyAddressFields(addr, request, type);
+        return addr;
+    }
+
+    private void applyAddressFields(Address target, AddAddressRequest request, AddressType type) {
+        target.setFirstName(request.getFirstName());
+        target.setLastName(request.getLastName());
+        target.setAddress1(request.getAddress1());
+        target.setCity(request.getCity());
+        target.setCountry(request.getCountry());
+        target.setProvince(request.getProvince());
+        target.setZipCode(request.getZipCode());
+        target.setAddressType(type);
     }
 
     private String normalizeBaseUrl(String baseUrl) {
