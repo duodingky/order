@@ -54,13 +54,6 @@ public class OrderController {
         return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
     }
 
-    @PutMapping("/updateAddress/{orderID}")
-    public ResponseEntity<?> updateAddress(@PathVariable("orderID") String orderId,
-                                           @Valid @RequestBody List<AddAddressRequest> req) {
-        OrderEntity saved = orderService.updateAddressesForOrder(orderId, req);
-        return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
-    }
-
     @DeleteMapping("/orderItem/{orderId}")
     public ResponseEntity<?> deleteItems(@PathVariable String orderId,
                                          @Valid @RequestBody DeleteOrderItemsRequest req) {

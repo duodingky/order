@@ -177,35 +177,18 @@ public class OrderService {
 
         if (addresses != null) {
             for (AddAddressRequest a : addresses) {
-                Address addr = toAddress(a);
-                if (addr == null) {
+                if (a == null) {
                     continue;
                 }
-                order.addAddress(addr);
-            }
-        }
-
-        return orderRepository.save(order);
-    }
-
-    @Transactional
-    public OrderEntity updateAddressesForOrder(String orderId, List<AddAddressRequest> addresses) {
-        OrderEntity order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + orderId));
-
-        if (order.getAddresses() != null) {
-            for (Address existing : List.copyOf(order.getAddresses())) {
-                existing.setOrder(null);
-            }
-            order.getAddresses().clear();
-        }
-
-        if (addresses != null) {
-            for (AddAddressRequest a : addresses) {
-                Address addr = toAddress(a);
-                if (addr == null) {
-                    continue;
-                }
+                Address addr = new Address();
+                addr.setFirstName(a.getFirstName());
+                addr.setLastName(a.getLastName());
+                addr.setAddress1(a.getAddress1());
+                addr.setCity(a.getCity());
+                addr.setCountry(a.getCountry());
+                addr.setProvince(a.getProvince());
+                addr.setZipCode(a.getZipCode());
+                addr.setAddressType(resolveAddressType(a.getAddressType()));
                 order.addAddress(addr);
             }
         }
@@ -347,22 +330,6 @@ public class OrderService {
         } catch (IllegalArgumentException ex) {
             return AddressType.valueOf(addressType.toLowerCase());
         }
-    }
-
-    private Address toAddress(AddAddressRequest request) {
-        if (request == null) {
-            return null;
-        }
-        Address addr = new Address();
-        addr.setFirstName(request.getFirstName());
-        addr.setLastName(request.getLastName());
-        addr.setAddress1(request.getAddress1());
-        addr.setCity(request.getCity());
-        addr.setCountry(request.getCountry());
-        addr.setProvince(request.getProvince());
-        addr.setZipCode(request.getZipCode());
-        addr.setAddressType(resolveAddressType(request.getAddressType()));
-        return addr;
     }
 
     private String normalizeBaseUrl(String baseUrl) {
