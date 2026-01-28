@@ -1,5 +1,6 @@
 package com.example.order.service;
 
+import com.example.order.dto.AddAddressRequest;
 import com.example.order.dto.CreateOrderFromProductRequest;
 import com.example.order.dto.CreateOrderRequest;
 import com.example.order.dto.DeleteOrderItemsRequest;
@@ -92,13 +93,9 @@ public class OrderService {
                 addr.setAddress1(a.getAddress1());
                 addr.setCity(a.getCity());
                 addr.setCountry(a.getCountry());
+                addr.setProvince(a.getProvince());
                 addr.setZipCode(a.getZipCode());
-                try {
-                    addr.setAddressType(AddressType.valueOf(a.getAddressType()));
-                } catch (Exception ex) {
-                    // try lowercase
-                    addr.setAddressType(AddressType.valueOf(a.getAddressType().toLowerCase()));
-                }
+                addr.setAddressType(resolveAddressType(a.getAddressType()));
                 order.addAddress(addr);
             }
         }
@@ -170,6 +167,32 @@ public class OrderService {
         }
 
         updateTotals(order);
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public OrderEntity addAddressesToOrder(String orderId, List<AddAddressRequest> addresses) {
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found: " + orderId));
+
+        if (addresses != null) {
+            for (AddAddressRequest a : addresses) {
+                if (a == null) {
+                    continue;
+                }
+                Address addr = new Address();
+                addr.setFirstName(a.getFirstName());
+                addr.setLastName(a.getLastName());
+                addr.setAddress1(a.getAddress1());
+                addr.setCity(a.getCity());
+                addr.setCountry(a.getCountry());
+                addr.setProvince(a.getProvince());
+                addr.setZipCode(a.getZipCode());
+                addr.setAddressType(resolveAddressType(a.getAddressType()));
+                order.addAddress(addr);
+            }
+        }
+
         return orderRepository.save(order);
     }
 
@@ -295,6 +318,17 @@ public class OrderService {
             order.setItemTotal(itemTotal);
             Double shipping = order.getShippingTotal();
             order.setOrderTotal(shipping != null ? itemTotal + shipping : itemTotal);
+        }
+    }
+
+    private AddressType resolveAddressType(String addressType) {
+        if (addressType == null || addressType.isBlank()) {
+            return null;
+        }
+        try {
+            return AddressType.valueOf(addressType);
+        } catch (IllegalArgumentException ex) {
+            return AddressType.valueOf(addressType.toLowerCase());
         }
     }
 

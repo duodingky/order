@@ -1,5 +1,6 @@
 package com.example.order.controller;
 
+import com.example.order.dto.AddAddressRequest;
 import com.example.order.dto.ApiResponse;
 import com.example.order.dto.CreateOrderFromProductRequest;
 import com.example.order.dto.CreateOrderRequest;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
 
@@ -42,6 +44,13 @@ public class OrderController {
     public ResponseEntity<?> addItem(@PathVariable String orderId,
                                      @Valid @RequestBody CreateOrderFromProductRequest req) {
         OrderEntity saved = orderService.addItemsToOrder(orderId, req);
+        return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
+    }
+
+    @PostMapping("/addAddress/{orderID}")
+    public ResponseEntity<?> addAddress(@PathVariable("orderID") String orderId,
+                                        @Valid @RequestBody List<AddAddressRequest> req) {
+        OrderEntity saved = orderService.addAddressesToOrder(orderId, req);
         return ResponseEntity.ok(new ApiResponse<>(saved.getId()));
     }
 
@@ -109,6 +118,7 @@ public class OrderController {
         r.setLastName(a.getLastName());
         r.setCountry(a.getCountry());
         r.setCity(a.getCity());
+        r.setProvince(a.getProvince());
         r.setZipCode(a.getZipCode());
         r.setAddress1(a.getAddress1());
         return r;

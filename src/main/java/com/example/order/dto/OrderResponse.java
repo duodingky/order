@@ -42,6 +42,7 @@ public class OrderResponse {
         private String lastName;
         private String country;
         private String city;
+        private String province;
         private String zipCode;
         private String address1;
     }

@@ -29,6 +29,7 @@ public class CreateOrderRequest {
         private String address1;
         private String city;
         private String country;
+        private String province;
         private String zipCode;
         private String addressType; // shipping | billing
     }
